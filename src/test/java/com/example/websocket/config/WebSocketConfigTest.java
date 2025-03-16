@@ -1,48 +1,69 @@
 package com.example.websocket.config;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.*;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
- * Test class for {@link WebSocketConfig}.
- * Verifies the WebSocket configuration and endpoint registration.
- *
- * @author Your Name
- * @version 1.0
- * @since 2023-10-01
+ * Unit test for WebSocketConfig class to verify WebSocket configuration settings.
  */
-@SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WebSocketConfigTest {
 
-    @Autowired
     private WebSocketConfig webSocketConfig;
+    private MessageBrokerRegistry messageBrokerRegistry;
+    private StompEndpointRegistry stompEndpointRegistry;
+    private StompWebSocketEndpointRegistration stompWebSocketEndpointRegistration;
 
     /**
-     * Tests the configuration of the message broker.
+     * Sets up mock dependencies before each test execution.
      */
-    @Test
-    void testConfigureMessageBroker() {
-        MessageBrokerRegistry registry = mock(MessageBrokerRegistry.class);
-        webSocketConfig.configureMessageBroker(registry);
+    @BeforeEach
+    void setUp() {
+        webSocketConfig = new WebSocketConfig();
+        messageBrokerRegistry = mock(MessageBrokerRegistry.class);
+        stompEndpointRegistry = mock(StompEndpointRegistry.class);
+        stompWebSocketEndpointRegistration = mock(StompWebSocketEndpointRegistration.class);
 
-        verify(registry).enableSimpleBroker("/topic");
-        verify(registry).setApplicationDestinationPrefixes("/app");
+        // Mock the return values to prevent NullPointerException
+        when(stompEndpointRegistry.addEndpoint("/ws")).thenReturn(stompWebSocketEndpointRegistration);
+        when(stompWebSocketEndpointRegistration.setAllowedOrigins("*")).thenReturn(stompWebSocketEndpointRegistration);
     }
 
-    /**
-     * Tests the registration of WebSocket endpoints.
-     */
-    @Test
-    void testRegisterStompEndpoints() {
-        StompEndpointRegistry registry = mock(StompEndpointRegistry.class);
-        webSocketConfig.registerStompEndpoints(registry);
+    @Nested
+    @DisplayName("Message Broker Configuration Tests")
+    class MessageBrokerConfigTests {
 
-        verify(registry).addEndpoint("/ws").withSockJS();
+        /**
+         * Tests if the message broker configuration is set correctly.
+         */
+        @Test
+        @DisplayName("Should configure message broker with correct prefixes and simple broker")
+        void shouldConfigureMessageBrokerCorrectly() {
+            webSocketConfig.configureMessageBroker(messageBrokerRegistry);
+            verify(messageBrokerRegistry).enableSimpleBroker("/topic");
+            verify(messageBrokerRegistry).setApplicationDestinationPrefixes("/app");
+        }
+    }
+
+    @Nested
+    @DisplayName("STOMP Endpoint Registration Tests")
+    class StompEndpointConfigTests {
+
+        /**
+         * Tests if the STOMP endpoint registration is configured properly.
+         */
+        @Test
+        @DisplayName("Should register STOMP endpoints correctly")
+        void shouldRegisterStompEndpointsCorrectly() {
+            webSocketConfig.registerStompEndpoints(stompEndpointRegistry);
+            verify(stompEndpointRegistry).addEndpoint("/ws");
+            verify(stompWebSocketEndpointRegistration).setAllowedOrigins("*");
+            verify(stompWebSocketEndpointRegistration).withSockJS();
+        }
     }
 }
+

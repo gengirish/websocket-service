@@ -7,39 +7,33 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * Configures WebSocket endpoints and enables STOMP over WebSockets.
- * This class sets up the message broker and registers the WebSocket endpoint.
- *
- * @author Your Name
- * @version 1.0
- * @see WebSocketMessageBrokerConfigurer
- * @since 2023-10-01
+ * WebSocket configuration class that enables WebSocket message brokering
+ * and configures STOMP protocol endpoints.
  */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     /**
-     * Configures the message broker for WebSocket communication.
+     * Configures message broker options.
+     * Enables a simple in-memory message broker and defines application destination prefixes.
      *
-     * @param config the {@link MessageBrokerRegistry} to configure.
+     * @param registry the MessageBrokerRegistry to configure.
      */
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple in-memory message broker for broadcasting messages
-        config.enableSimpleBroker("/topic");
-        // Set the prefix for application-specific messages
-        config.setApplicationDestinationPrefixes("/app");
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic"); // Enables a simple broker for topic-based messaging
+        registry.setApplicationDestinationPrefixes("/app"); // Prefix for messages bound for @MessageMapping methods
     }
 
     /**
-     * Registers the WebSocket endpoint and enables SockJS fallback.
+     * Registers STOMP endpoints that clients can connect to.
+     * Enables SockJS fallback for browsers that do not support WebSockets.
      *
-     * @param registry the {@link StompEndpointRegistry} to register endpoints.
+     * @param registry the StompEndpointRegistry to configure.
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/ws" endpoint for WebSocket connections
-        registry.addEndpoint("/ws").withSockJS(); // Enable SockJS fallback
+        registry.addEndpoint("/ws").setAllowedOrigins("*").withSockJS();
     }
 }

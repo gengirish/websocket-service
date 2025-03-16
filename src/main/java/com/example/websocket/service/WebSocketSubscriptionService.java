@@ -2,73 +2,56 @@ package com.example.websocket.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.messaging.SessionConnectedEvent;
-import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Manages WebSocket subscriptions and tracks active client sessions.
- * This class logs connection and disconnection events and maintains a set of active sessions.
- *
- * @author Your Name
- * @version 1.0
- * @since 2023-10-01
+ * Service to manage WebSocket client subscriptions.
+ * Tracks active WebSocket sessions and provides utilities for managing connections.
  */
-@Component
+@Service
 public class WebSocketSubscriptionService {
-
     private static final Logger logger = LoggerFactory.getLogger(WebSocketSubscriptionService.class);
-
-    private final SimpMessageSendingOperations messagingTemplate;
-    private final Set<String> activeSessions = new HashSet<>();
+    private final Set<WebSocketSession> activeSessions = Collections.synchronizedSet(new HashSet<>());
 
     /**
-     * Constructs a new {@link WebSocketSubscriptionService} with the given messaging template.
+     * Registers a new WebSocket session.
      *
-     * @param messagingTemplate the {@link SimpMessageSendingOperations} used to send messages.
+     * @param session the WebSocket session to register.
      */
-    public WebSocketSubscriptionService(SimpMessageSendingOperations messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    public void addSession(WebSocketSession session) {
+        activeSessions.add(session);
+        logger.info("New WebSocket session added: {}", session.getId());
     }
 
     /**
-     * Handles client connection events.
+     * Removes a WebSocket session when a client disconnects.
      *
-     * @param event the {@link SessionConnectedEvent} triggered when a client connects.
+     * @param session the WebSocket session to remove.
      */
-    @EventListener
-    public void handleWebSocketConnectListener(SessionConnectedEvent event) {
-        SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(event.getMessage());
-        String sessionId = headers.getSessionId();
-        activeSessions.add(sessionId);
-        logger.info("Client connected: {}", sessionId);
+    public void removeSession(WebSocketSession session) {
+        activeSessions.remove(session);
+        logger.info("WebSocket session removed: {}", session.getId());
     }
 
     /**
-     * Handles client disconnection events.
+     * Retrieves the current active WebSocket sessions.
      *
-     * @param event the {@link SessionDisconnectEvent} triggered when a client disconnects.
+     * @return a set of active WebSocket sessions.
      */
-    @EventListener
-    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
-        SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(event.getMessage());
-        String sessionId = headers.getSessionId();
-        activeSessions.remove(sessionId);
-        logger.info("Client disconnected: {}", sessionId);
+    public Set<WebSocketSession> getActiveSessions() {
+        return Collections.unmodifiableSet(activeSessions);
     }
 
     /**
-     * Returns the set of active WebSocket sessions.
-     *
-     * @return a {@link Set} of active session IDs.
+     * Clears all active WebSocket sessions.
      */
-    public Set<String> getActiveSessions() {
-        return activeSessions;
+    public void clearAllSessions() {
+        activeSessions.clear();
     }
+
 }
